@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jdddPanel><DOOCSLayeredPane name="EditorPanel" bounds="32,5,1163,855"><fillColor>210,210,210</fillColor><grid>19.383333,19.88372</grid>
+<DOOCSPlotSpectrum name="PlotSpectrum4" bounds="601,477,484,338">
+<masterXScale>A</masterXScale><adr0>doocs://xfelcpulla23m:610498010/F/D2/TEST/HISTOGRAM2</adr0><lineColor1>0,250,0</lineColor1></DOOCSPlotSpectrum>
+<DOOCSPlotSpectrum name="PlotSpectrum3" bounds="601,119,484,338">
+<masterXScale>A</masterXScale><adr0>doocs://xfelcpulla24m:610498010/F/D/TEST/HISTOGRAM2</adr0><lineColor1>0,250,0</lineColor1></DOOCSPlotSpectrum>
+<DOOCSPlotSpectrum name="PlotSpectrum2" bounds="78,477,484,338">
+<masterXScale>A</masterXScale><adr0>doocs://xfelcpulla23m:610498010/F/D2/TEST/HISTOGRAM</adr0><lineColor1>0,250,0</lineColor1></DOOCSPlotSpectrum>
+<DOOCSPlotSpectrum name="PlotSpectrum1" bounds="78,119,484,338">
+<masterXScale>A</masterXScale><adr0>doocs://xfelcpulla24m:610498010/F/D/TEST/HISTOGRAM</adr0><lineColor1>0,250,0</lineColor1></DOOCSPlotSpectrum>
+<DOOCSButton name="Button1" bounds="969,20,174,60"><function>Print Panel</function><text>Print</text><buttonColor>238,238,238</buttonColor><printer>mvs5ps1</printer></DOOCSButton>
+<DOOCSLabel name="Label1" bounds="116,20,833,60"><textColor>255,255,255</textColor><textFont>Arial,1,28</textFont></DOOCSLabel>
+<DOOCSIcon name="Icon1" bounds="19,20,58,60"><iconFile>${context}logoSmall.png</iconFile></DOOCSIcon>
+</DOOCSLayeredPane>
+<thumbnail>iVBORw0KGgoAAAANSUhEUgAAAHUAAABWCAYAAADxPNkkAAADzUlEQVR4Xu2cTW4iUQyEOUROMtxpjjRHyDmyZI0iJER+WCRIIYgr9AikN3IqLtIGJi9luaVP4XWMJ+UPLGbD5O7ubijyMDlchwfz+bxIwgeps9nMBZ9UXJ9rXK3Xl+/Ukvo9HK79fn8RrddZUu/v70Pn4mtOSX14eBgWi8Xw8vLy6XdXk/r6+nr8+fT0NKxWq+Ht7W14fHwcnp+fh+VyefzH8TnFaU5JHUvrdZbU9/f3o9DtdjtsNpvj+SB6t9sN6/W6pJ7Bf5OKH5Dqg9L3cXt7ezGt15fv1EKPkpqQkpqQkpqQUVIP/09SJnsepKQKgnmQkNRfkz8fmE5+H7m5ufkH1vTGG4IdENZjnkuYTqefzoits/Xe4/YczIOEpLYhtMcY4gC+qnoyVqo9Y56fCOZBRkltwe2rXwEm1WbIkAcZJdVrrAAbglejAMuDlNQEeZCQ1Czr16tRgOVBQlJtYwXYELwaBVgepKQmyIOEpNb67QvLg4Sk2sYKsCF4NQqwPEhJTZAHCUmt9dsXlgcJSbWNFWBD8GoUYHmQkpogDxKSWuu3LywPEpJqGyvAhuDVKMDyICU1QR4kJLXWb19YHiQk1TZWgA3Bq1GA5UFCUuud2heWBwlJtY0VYEPwahRgeZCSmiAPEpJa67cvLA8SkmobK8CG4NUowPIgJTVBHiQktdZvX1geJCTVNlaADcGrUYDlQUpqgjxISGpbv0p4Q8BBKeHlQUJS7auFnb170bN379TZBvaI5PHuRc/evXPOeK+BeZCwVEWy50FGSS20KKkJKakJGSUVd7oa2fMgIantE5kS3hDsgLD+p+PlQUJS2xDaY+87H64Jfj8CfjeC/V4EPNuasXlaJvw7rgVmwRzn5kEukop/9E9lbB6VTJgHGSW1BbcrQAG2rmyGDHmQUVK9xgqwIXg1CrA8SElNkAcJSc2yfr0aBVgeJCTVNlaADcGrUYDlQUpqgjxISGqt376wPEhIqm2sABuCV6MAy4OU1AR5kJDUWr99YXmQkFTbWAE2BK9GAZYHKakJ8iAhqbV++8LyICGptrECbAhejQIsDxKSWu/UvrA8SEiqbawAG4JXowDLg5TUBHmQkNRav31heZCQVNtYATYEr0YBlgcpqQnyICGptX77wvIgIam2sQJsCF6NAiwPUlIT5EFCUmv99oXlQUJSbWMF2BC8GgVYHqSkJsiDhKS29auENwQclBJeHiQk1b5a2Nm7Fz17906dbWCPSB7vXvTs3TvnjPcamAcJS1Ukex5klNRCi5KakJKakJKakKPUuvJdfwFubYvsqT24xAAAAABJRU5ErkJggg==</thumbnail>
+</jdddPanel>
