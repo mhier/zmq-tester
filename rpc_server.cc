@@ -1,19 +1,17 @@
 
 #include "eq_zmq_test.h"
 #include "eq_errors.h"
-#include "eq_sts_codes.h"
 #include "eq_fct_errors.h"
 #include "d_fct.h"
 #include "eq_fct.h"
 #include "eq_client.h"
-#include "printtostderr.h"
 #include "DOOCSsleep.h"
 #include <fstream>
 #include <time.h>
 #include <assert.h>
 #include <stdio.h>
 
-char* object_name = "zmq_tester";
+const char* object_name = "zmq_tester";
 
 extern int fct_code;
 extern int arch_mode;

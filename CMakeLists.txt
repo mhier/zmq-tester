@@ -23,7 +23,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 --coverage")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(${CMAKE_SOURCE_DIR}/cmake/add_dependency.cmake)
-add_dependency(DOOCS 19.05 server zmq REQUIRED)
+add_dependency(DOOCS 19.05 server REQUIRED)
 
 include(${CMAKE_SOURCE_DIR}/cmake/enable_latest_cxx_support.cmake)
 

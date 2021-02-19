@@ -2,9 +2,7 @@
 #include <stdio.h>
 #include "eq_zmq_test.h"
 #include "eq_errors.h"
-#include "eq_sts_codes.h"
 #include "eq_fct_errors.h"
-#include "printtostderr.h"
 #include <assert.h>
 #include <sys/resource.h>
 
