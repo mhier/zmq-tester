@@ -12,7 +12,7 @@
 #include <iostream>
 
 #define ZmqTest_stat 10
-constexpr size_t NBINS = 10002;
+constexpr size_t NBINS = 222;
 
 class EqFctZmqTest : public EqFct {
  public:
@@ -24,8 +24,9 @@ class EqFctZmqTest : public EqFct {
   void post_init();
   int fct_code() { return ZmqTest_stat; }
 
-  D_spectrum prop_histogram{"HISTOGRAM", NBINS, this};
-  D_spectrum prop_histogram2{"HISTOGRAM2", NBINS, this};
+  D_spectrum prop_delayStamp{"DELAY_AFTER_X2TIMER_STAMP", NBINS, this};
+  D_spectrum prop_delayClock{"DELAY_AFTER_X2TIMER_CLOCK", NBINS, this};
+  D_spectrum prop_deltaXtimer{"DELTA_X2TIMER_CLOCK", NBINS, this};
 
   D_string mpsZmqName{this, "MPS_ZMQNAME"};
   std::vector<D_string> addresses;
@@ -50,7 +51,10 @@ class EqFctZmqTest : public EqFct {
   /// map of subscriptions
   std::map<std::string, Subscription> subscriptionMap;
 
-  std::map<size_t, size_t> histogram, histogram2;
+  std::map<size_t, size_t> hist_delayStamp, hist_delayClock, hist_deltaXtimer;
+
+  int64_t usecs_last_mpn{0};
+  int64_t last_mpn{0};
 
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);
 };
