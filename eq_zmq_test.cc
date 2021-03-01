@@ -104,14 +104,14 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
         int64_t mpn = data->get_long();
         if(last_mpn != 0) {
            if(mpn != last_mpn+1) {
-             printftostderr("zmq_test", "GAP! %ld events missing!\n", mpn-last_mpn-1);
+             printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn-last_mpn-1, last_mpn, mpn);
            }
         }
         last_mpn = mpn;
       }
     }
     else {
-      printftostderr("zmq_test", "ERROR! %s\n", subscription->path.c_str());
+      printftostderr("zmq_test", "ERROR! %s", subscription->path.c_str());
     }
 
 }
