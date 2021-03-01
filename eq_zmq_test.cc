@@ -1,4 +1,4 @@
-
+#include "doocs/printtostderr.h"
 #include <stdio.h>
 #include "eq_zmq_test.h"
 #include "eq_errors.h"
@@ -104,15 +104,14 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
         int64_t mpn = data->get_long();
         if(last_mpn != 0) {
            if(mpn != last_mpn+1) {
-             std::cout << "GAP! " <<mpn-last_mpn+1<< " MPN missing" << std::endl;
+             printftostderr("zmq_test", "GAP! %ld events missing!\n", mpn-last_mpn-1);
            }
         }
         last_mpn = mpn;
-        std::cout << mpn << std::endl;
       }
     }
     else {
-      std::cout << "Error: " << subscription->path << std::endl;
+      printftostderr("zmq_test", "ERROR! %s\n", subscription->path.c_str());
     }
 
 }
