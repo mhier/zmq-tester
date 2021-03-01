@@ -2,7 +2,6 @@
 #define eq_vs_stat_h
 
 #include <vector>
-#include "D_DOOCSdzmq.h"
 #include <time.h>
 #include "d_fct.h"
 #include "eq_fct.h"
@@ -24,39 +23,57 @@ class EqFctZmqTest : public EqFct {
   void post_init();
   int fct_code() { return ZmqTest_stat; }
 
-  D_spectrum prop_delayStamp{"DELAY_AFTER_X2TIMER_STAMP", NBINS, this};
-  D_spectrum prop_delayClock{"DELAY_AFTER_X2TIMER_CLOCK", NBINS, this};
-  D_spectrum prop_deltaXtimer{"DELTA_X2TIMER_CLOCK", NBINS, this};
+  static int64_t usecs_last_mpn;
+  static int64_t last_mpn;
 
-  D_string mpsZmqName{this, "MPS_ZMQNAME"};
-  std::vector<D_string> addresses;
 
-  std::map<int64_t, std::chrono::steady_clock::time_point> mpsReceivedMap;
-  std::map<int64_t, int64_t> mpsReceivedMap2;
+  /** static flag if dmsg_start() has been called already, with mutex for thread safety */
+  bool dmsgStartCalled{false};
+  std::mutex dmsgStartCalled_mutex;
+
 
   /// Structure describing a single subscription
   struct Subscription {
-    /// cached dmsg tag needed for cleanup
-    dmsg_t tag;
+    Subscription()  {}
+    std::string path;
+    bool isMpn{false};
 
-    bool isMPSnumber{false};
+    /// Mutex for zmq_callback_extra_listeners
+    std::mutex listeners_mutex;
 
-    std::string name;
+    /// Flag whether the subscription is currently active, i.e. whether the actual DOOCS subscription has been made.
+    /// This is used to implement activateAsyncRead() properly. listeners_mutex must be held while accessing this
+    /// variable.
+    bool active{false};
 
-    EqFctZmqTest* eqfct;
+    /// Flag whether the callback function has already been called for this subscription, with a condition variable
+    /// for the notification when the callback is called for the first time.
+    bool started{false};
+    std::condition_variable startedCv{};
 
-    bool receivedSinceLastTrigger{true};
+    /// Flag whether an exception has been reported to the listeners since the last activation. Used to prevent
+    /// duplicate exceptions in setException(). Will be cleared during activation. Access requires listeners_mutex.
+    bool hasException{false};
   };
+
+
 
   /// map of subscriptions
   std::map<std::string, Subscription> subscriptionMap;
 
-  std::map<size_t, size_t> hist_delayStamp, hist_delayClock, hist_deltaXtimer;
+  /// mutex for subscriptionMap
+  std::mutex subscriptionMap_mutex;
 
-  int64_t usecs_last_mpn{0};
-  int64_t last_mpn{0};
 
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);
+
+
+
+  /******************************************************************************************************************/
+
+  void subscribe(const std::string& path, bool isMpn=false);
+
+
 };
 
 #endif

@@ -8,160 +8,111 @@
 
 using namespace std;
 
+
+int64_t EqFctZmqTest::usecs_last_mpn{0};
+int64_t EqFctZmqTest::last_mpn{0};
+
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
-  for(size_t i = 0; i < 250; ++i) {
-    addresses.emplace_back(this, "LISTENER_" + std::to_string(i));
+}
+
+
+void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
+
+  std::unique_lock<std::mutex> lock(subscriptionMap_mutex);
+
+  assert(subscriptionMap.find(path) == subscriptionMap.end());
+
+  // gain lock for listener, to exclude concurrent access with the zmq_callback()
+  std::unique_lock<std::mutex> listeners_lock(subscriptionMap[path].listeners_mutex);
+
+
+  // subscriptionMap is no longer used below this point
+  lock.unlock();
+
+  subscriptionMap[path].path = path;
+  subscriptionMap[path].isMpn=isMpn;
+
+  assert(!subscriptionMap[path].active);
+
+  // subscribe to property
+  EqData dst;
+  EqAdr ea;
+  ea.adr(path);
+  dmsg_t tag;
+  int err = dmsg_attach(&ea, &dst, (void*)&(subscriptionMap[path]), &zmq_callback, &tag);
+  if(err) {
+    /// FIXME put error into queue of all accessors!
+    throw std::runtime_error(
+        std::string("Cannot subscribe to DOOCS property '" + path + "' via ZeroMQ: ") + dst.get_string());
   }
+
+  // run dmsg_start() once
+  std::unique_lock<std::mutex> lck(dmsgStartCalled_mutex);
+  if(!dmsgStartCalled) {
+    dmsg_start();
+    dmsgStartCalled = true;
+  }
+
+  // set active flag, reset hasException flag
+  subscriptionMap[path].active = true;
+  subscriptionMap[path].hasException = false;
+
 }
 
 void EqFctZmqTest::interrupt_usr1(int) {}
 void EqFctZmqTest::init() {}
 void EqFctZmqTest::post_init() {
-  std::cout << "Subscribing MPS number '" << mpsZmqName.value() << "'..." << std::endl;
-  dmsg_start();
-
-  EqData dst;
-  EqAdr ea;
-  int err;
-
-  ea.adr(mpsZmqName.value());
-  subscriptionMap[mpsZmqName.value()].isMPSnumber = true;
-  subscriptionMap[mpsZmqName.value()].eqfct = this;
-  subscriptionMap[mpsZmqName.value()].name = mpsZmqName.value();
-  err = dmsg_attach(&ea, &dst, (void*)&(subscriptionMap[mpsZmqName.value()]), &zmq_callback,
-      &subscriptionMap[mpsZmqName.value()].tag);
-  if(err) {
-    std::cout << "Cannot subscribe to MPS number property '" << mpsZmqName.value()
-              << "' via ZeroMQ: " << dst.get_string() << std::endl;
-    exit(1);
-  }
-  std::cout << "done." << std::endl;
-
-  for(auto& addListener : addresses) {
-    if(strcmp(addListener.value(), "") != 0) {
-      std::cout << "Adding new listener '" << addListener.value() << "'..." << std::endl;
-      ea.adr(addListener.value());
-      subscriptionMap[addListener.value()].eqfct = this;
-      subscriptionMap[addListener.value()].name = addListener.value();
-      err = dmsg_attach(&ea, &dst, (void*)&(subscriptionMap[addListener.value()]), &zmq_callback,
-          &subscriptionMap[addListener.value()].tag);
-      if(err) {
-        std::cout << "Cannot subscribe to DOOCS property '" << addListener.value()
-                  << "' via ZeroMQ: " << dst.get_string() << std::endl;
-      }
-      else {
-        std::cout << "done." << std::endl;
-      }
-    }
-  }
+  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER",true);
+  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
+  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2");
+  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.3");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.1");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.2");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.3");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_DELAY");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FILLING");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP");
+  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE");
 }
 
 void EqFctZmqTest::update() {
-  prop_delayStamp.set_ro_access();
-  for(size_t i = 0; i < NBINS; ++i) {
-    prop_delayStamp.fill_spectrum(i, hist_delayStamp[i]);
-  }
-  prop_delayStamp.spectrum_parameter(0, -1, 1, 0);
-  prop_delayStamp.xegu(0, -int(NBINS) / 2. - 10, NBINS - 2 + 10, "ms");
 
-  prop_delayClock.set_ro_access();
-  for(size_t i = 0; i < NBINS; ++i) {
-    prop_delayClock.fill_spectrum(i, hist_delayClock[i]);
-  }
-  prop_delayClock.spectrum_parameter(0, -int(NBINS) / 2., 1, 0);
-  prop_delayClock.xegu(0, -int(NBINS) / 2. - 10, NBINS / 2. + 10, "ms");
-
-  prop_deltaXtimer.set_ro_access();
-  for(size_t i = 0; i < NBINS; ++i) {
-    prop_deltaXtimer.fill_spectrum(i, hist_deltaXtimer[i]);
-  }
-  prop_deltaXtimer.spectrum_parameter(0, -int(NBINS) / 2., 1, 0);
-  prop_deltaXtimer.xegu(0, -int(NBINS) / 2. - 10, NBINS / 2. + 10, "ms");
 }
 
 void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
-  auto* subscription = static_cast<EqFctZmqTest::Subscription*>(self_);
-  auto* eqfct = subscription->eqfct;
-  eqfct->lock();
+    // obtain pointer to subscription object
+    auto* subscription = static_cast<Subscription*>(self_);
 
-  time_t s;
-  uint32_t us;
-  data->time(&s, &us);
-  int64_t usecs = s * 1000000 + us;
-  //int64_t usecs = info->sec * 1000000 + info->usec;
+    // Make sure the stamp is used from the ZeroMQ header. TODO: Is this really wanted?
+    data->time(info->sec, info->usec);
+    data->mpnum(info->ident);
 
+    std::unique_lock<std::mutex> lock(subscription->listeners_mutex);
 
-  try {
-    if(subscription->isMPSnumber) {
-      eqfct->mpsReceivedMap[info->ident] = std::chrono::steady_clock::now();
-      eqfct->mpsReceivedMap2[info->ident] = usecs;
-      bool hasMissedData=false;
-      for(auto& sub : eqfct->subscriptionMap) {
-        if(sub.second.isMPSnumber) continue;
-        if(!sub.second.receivedSinceLastTrigger) {
-          if(!hasMissedData) {
-            std::cout << "Event " << info->ident << " [" << std::put_time(std::localtime(&s), "%c %Z") << "] has missing data" << std::endl;
-            hasMissedData = true;
-          }
-          std::cout << "Missing in last event: " << sub.second.name << std::endl;
+    // As long as we get a callback from ZMQ, we consider it started
+    if(not subscription->started) {
+      subscription->started = true;
+      subscription->startedCv.notify_all();
+    }
+
+    // check for error
+    if(data->error() != no_connection) {
+      // no error: push the data
+      subscription->hasException = false;
+
+      if(subscription->isMpn) {
+        int64_t mpn = data->get_long();
+        if(last_mpn != 0) {
+           if(mpn != last_mpn+1) {
+             std::cout << "GAP! " <<mpn-last_mpn+1<< " MPN missing" << std::endl;
+           }
         }
-        sub.second.receivedSinceLastTrigger = false;
+        last_mpn = mpn;
+        std::cout << mpn << std::endl;
       }
-      if(eqfct->usecs_last_mpn) {
-        int64_t bin = (usecs - eqfct->usecs_last_mpn) / 1000 + NBINS / 2;
-        if(bin > signed(NBINS - 1)) {
-          std::cout << "overrun: " << bin << " " << subscription->name << std::endl;
-          bin = NBINS - 1;
-        }
-        if(bin < 0) bin = 0;
-        eqfct->hist_deltaXtimer[bin]++;
-
-        if(info->ident != eqfct->last_mpn + 1) {
-          std::cout << "MPN jumped: " << info->ident << " follows " << eqfct->last_mpn << std::endl;
-        }
-      }
-      eqfct->usecs_last_mpn = usecs;
-      eqfct->last_mpn = info->ident;
     }
     else {
-      subscription->receivedSinceLastTrigger = true;
-      auto found = eqfct->mpsReceivedMap.find(info->ident);
-      int64_t bin = 0; // bin 0 -> MPS number not yet received
-      int64_t bin2 = 0;
-      if(eqfct->last_mpn > info->ident) {
-        std::cout << subscription->name << " has arrived late for event " << info->ident << " [" << std::put_time(std::localtime(&s), "%c %Z") << "]." << std::endl;
-      }
-      if(found != eqfct->mpsReceivedMap.end()) {
-        auto dt = std::chrono::steady_clock::now() - found->second;
-        bin = std::chrono::duration_cast<std::chrono::milliseconds>(dt).count() + 1;
-        bin2 = (usecs - eqfct->mpsReceivedMap2[info->ident]) / 1000 + NBINS / 2;
-        if(std::abs(usecs - eqfct->mpsReceivedMap2[info->ident]) > 100000) {  // 100ms tolerance
-          std::cout << "attached timestamp does not match: "
-                    << std::round((usecs - eqfct->mpsReceivedMap2[info->ident]) / 1000.) << " " << subscription->name
-                    << std::endl;
-        }
-        if(bin > signed(NBINS - 1)) {
-          std::cout << "overrun: " << bin << " " << subscription->name << std::endl;
-          bin = NBINS - 1;
-        }
-        if(bin2 > signed(NBINS - 1)) {
-          std::cout << "overrun2: " << bin2 << " " << subscription->name << std::endl;
-          bin2 = NBINS - 1;
-        }
-        if(bin < 0) bin = 0;
-        if(bin2 < 0) bin2 = 0;
-      }
-      else {
-        std::cout << "notfound: " << subscription->name << std::endl;
-      }
-      eqfct->hist_delayStamp[bin]++;
-      eqfct->hist_delayClock[bin2]++;
+      std::cout << "Error: " << subscription->path << std::endl;
     }
-  }
-  catch(...) {
-    eqfct->unlock();
-    throw;
-  }
 
-  eqfct->unlock();
 }
