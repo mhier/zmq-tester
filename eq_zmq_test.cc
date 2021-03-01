@@ -5,18 +5,22 @@
 #include "eq_fct_errors.h"
 #include <assert.h>
 #include <sys/resource.h>
+#include <boost/make_shared.hpp>
 
 using namespace std;
 
+pthread_t EqFctZmqTest::pthread_t_invalid;
 
 int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
+    pthread_t_invalid =pthread_self();
 }
 
 
 void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
+  listenerHolder.push_back(boost::make_shared<Listener>(path, isMpn));
 
   std::unique_lock<std::mutex> lock(subscriptionMap_mutex);
 
@@ -25,13 +29,12 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   // gain lock for listener, to exclude concurrent access with the zmq_callback()
   std::unique_lock<std::mutex> listeners_lock(subscriptionMap[path].listeners_mutex);
 
+  subscriptionMap[path].listeners.push_back(listenerHolder.back().get());
 
   // subscriptionMap is no longer used below this point
   lock.unlock();
 
-  subscriptionMap[path].path = path;
-  subscriptionMap[path].isMpn=isMpn;
-
+  // from here, this is like ZMQSubscriptionManager::activate(path)
   assert(!subscriptionMap[path].active);
 
   // subscribe to property
@@ -67,11 +70,11 @@ void EqFctZmqTest::theThread() {
         std::unique_lock<std::mutex> lk(subscriptionMap_mutex);
 
         for(auto &sub : subscriptionMap) {
-          if(sub.second.isMpn) {
-            qmpn = sub.second.notifications;
+          if(sub.second.listeners.front()->isMpn) {
+            qmpn = sub.second.listeners.front()->notifications;
           }
           else {
-            qothers.push_back(sub.second.notifications);
+            qothers.push_back(sub.second.listeners.front()->notifications);
           }
         }
     }
@@ -140,11 +143,20 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
       subscription->startedCv.notify_all();
     }
 
+    // store thread id of the thread calling this function, if not yet done
+    if(pthread_equal(subscription->zqmThreadId, pthread_t_invalid)) {
+      subscription->zqmThreadId = pthread_self();
+    }
+
     // check for error
     if(data->error() != no_connection) {
       // no error: push the data
       subscription->hasException = false;
-      subscription->notifications.push_overwrite(*data);
+      for(auto& listener : subscription->listeners) {
+        if(listener->isActiveZMQ) {
+          listener->notifications.push_overwrite(*data);
+        }
+      }
     }
     else {
       try {
@@ -152,7 +164,15 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
       }
       catch(...) {
         subscription->hasException = true;
-        subscription->notifications.push_overwrite_exception(std::current_exception());
+        for(auto& listener : subscription->listeners) {
+          if(listener->isActiveZMQ) {
+            listener->notifications.push_overwrite_exception(std::current_exception());
+            lock.unlock();
+            //listener->_backend->informRuntimeError(listener->_path);
+            printtostderr("zmq_callback", "would call backend->informRundimeError()");
+            lock.lock();
+          }
+        }
       }
     }
 
