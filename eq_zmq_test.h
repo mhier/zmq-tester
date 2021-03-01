@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <iostream>
+#include <ChimeraTK/cppext/future_queue.hpp>
 
 #define ZmqTest_stat 10
 constexpr size_t NBINS = 222;
@@ -54,6 +55,10 @@ class EqFctZmqTest : public EqFct {
     /// Flag whether an exception has been reported to the listeners since the last activation. Used to prevent
     /// duplicate exceptions in setException(). Will be cleared during activation. Access requires listeners_mutex.
     bool hasException{false};
+
+
+    cppext::future_queue<EqData> notifications{3};
+
   };
 
 
@@ -66,6 +71,9 @@ class EqFctZmqTest : public EqFct {
 
 
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);
+
+  void theThread();
+  std::thread hThread;
 
 
 

@@ -24,6 +24,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(${CMAKE_SOURCE_DIR}/cmake/add_dependency.cmake)
 add_dependency(DOOCS 19.05 server REQUIRED)
+add_dependency(ChimeraTK-cppext REQUIRED)
 
 include(${CMAKE_SOURCE_DIR}/cmake/enable_latest_cxx_support.cmake)
 
@@ -32,7 +33,10 @@ include_directories(${PROJECT_SOURCE_DIR})
 AUX_SOURCE_DIRECTORY(${CMAKE_SOURCE_DIR} server_sources)
 
 add_executable(${PROJECT_NAME} ${server_sources})
-target_link_libraries(${PROJECT_NAME} ${DOOCS_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${DOOCS_LIBRARIES} ${ChimeraTK-cppext_LIBRARIES})
+set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "${ChimeraTK-cppext_CXX_FLAGS} ${DOOCS_CXX_FLAGS}")
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${DOOCS_LINKER_FLAGS} ${ChimeraTK-cppext_LINKER_FLAGS}")
+
 
 # Install the executable, the server_rpc file, the dmap file and the mapp file.
 if("${CMAKE_INSTALL_PREFIX}" STREQUAL "/export/doocs/server")

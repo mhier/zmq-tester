@@ -59,6 +59,51 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
 
 }
 
+void EqFctZmqTest::theThread() {
+    std::vector<cppext::future_queue<EqData>> qothers;
+    cppext::future_queue<EqData> qmpn;
+
+    {
+        std::unique_lock<std::mutex> lk(subscriptionMap_mutex);
+
+        for(auto &sub : subscriptionMap) {
+          if(sub.second.isMpn) {
+            qmpn = sub.second.notifications;
+          }
+          else {
+            qothers.push_back(sub.second.notifications);
+          }
+        }
+    }
+
+
+    while(true) {
+        try {
+            EqData data;
+            qmpn.pop_wait(data);
+
+            int64_t mpn = data.get_long();
+            if(last_mpn != 0) {
+               if(mpn != last_mpn+1) {
+                 printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn-last_mpn-1, last_mpn, mpn);
+               }
+            }
+            last_mpn = mpn;
+
+            for(auto &q : qothers) {
+              while(q.pop()) continue;
+            }
+
+
+        }  catch (std::runtime_error &e) {
+            printftostderr("zmq_test", "ERROR! %s", e.what());
+
+        }
+    }
+
+}
+
+
 void EqFctZmqTest::interrupt_usr1(int) {}
 void EqFctZmqTest::init() {}
 void EqFctZmqTest::post_init() {
@@ -73,11 +118,11 @@ void EqFctZmqTest::post_init() {
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FILLING");
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP");
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE");
+
+  hThread = std::thread([this]{this->theThread();});
 }
 
-void EqFctZmqTest::update() {
-
-}
+void EqFctZmqTest::update() {}
 
 void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
     // obtain pointer to subscription object
@@ -99,19 +144,16 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
     if(data->error() != no_connection) {
       // no error: push the data
       subscription->hasException = false;
-
-      if(subscription->isMpn) {
-        int64_t mpn = data->get_long();
-        if(last_mpn != 0) {
-           if(mpn != last_mpn+1) {
-             printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn-last_mpn-1, last_mpn, mpn);
-           }
-        }
-        last_mpn = mpn;
-      }
+      subscription->notifications.push_overwrite(*data);
     }
     else {
-      printftostderr("zmq_test", "ERROR! %s", subscription->path.c_str());
+      try {
+        throw std::runtime_error("ZeroMQ connection interrupted: " + data->get_string());
+      }
+      catch(...) {
+        subscription->hasException = true;
+        subscription->notifications.push_overwrite_exception(std::current_exception());
+      }
     }
 
 }
