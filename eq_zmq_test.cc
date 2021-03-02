@@ -155,7 +155,7 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
       if(listener->isActiveZMQ) {
         bool success = listener->notifications.push_overwrite(*data);
         if(!success) {
-          printftostderr("zmq_callback", "Queue overrun, MPN: %ld",info->ident);
+          printftostderr("zmq_callback", "Queue overrun, MPN: %ld %s",info->ident, subscription->listeners[0]->path.c_str());
         }
       }
     }
