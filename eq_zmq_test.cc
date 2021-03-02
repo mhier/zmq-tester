@@ -15,9 +15,8 @@ int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
-    pthread_t_invalid =pthread_self();
+  pthread_t_invalid = pthread_self();
 }
-
 
 void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   listenerHolder.push_back(boost::make_shared<Listener>(path, isMpn));
@@ -59,58 +58,52 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   // set active flag, reset hasException flag
   subscriptionMap[path].active = true;
   subscriptionMap[path].hasException = false;
-
 }
 
 void EqFctZmqTest::theThread() {
-    std::vector<cppext::future_queue<EqData>> qothers;
-    cppext::future_queue<EqData> qmpn;
+  std::vector<cppext::future_queue<EqData>> qothers;
+  cppext::future_queue<EqData> qmpn;
 
-    {
-        std::unique_lock<std::mutex> lk(subscriptionMap_mutex);
+  {
+    std::unique_lock<std::mutex> lk(subscriptionMap_mutex);
 
-        for(auto &sub : subscriptionMap) {
-          if(sub.second.listeners.front()->isMpn) {
-            qmpn = sub.second.listeners.front()->notifications;
-          }
-          else {
-            qothers.push_back(sub.second.listeners.front()->notifications);
-          }
-        }
+    for(auto& sub : subscriptionMap) {
+      if(sub.second.listeners.front()->isMpn) {
+        qmpn = sub.second.listeners.front()->notifications;
+      }
+      else {
+        qothers.push_back(sub.second.listeners.front()->notifications);
+      }
     }
+  }
 
+  while(true) {
+    try {
+      EqData data;
+      qmpn.pop_wait(data);
 
-    while(true) {
-        try {
-            EqData data;
-            qmpn.pop_wait(data);
-
-            int64_t mpn = data.get_long();
-            if(last_mpn != 0) {
-               if(mpn != last_mpn+1) {
-                 printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn-last_mpn-1, last_mpn, mpn);
-               }
-            }
-            last_mpn = mpn;
-
-            for(auto &q : qothers) {
-              while(q.pop()) continue;
-            }
-
-
-        }  catch (std::runtime_error &e) {
-            printftostderr("zmq_test", "ERROR! %s", e.what());
-
+      int64_t mpn = data.get_long();
+      if(last_mpn != 0) {
+        if(mpn != last_mpn + 1) {
+          printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn - last_mpn - 1, last_mpn, mpn);
         }
-    }
+      }
+      last_mpn = mpn;
 
+      for(auto& q : qothers) {
+        while(q.pop()) continue;
+      }
+    }
+    catch(std::runtime_error& e) {
+      printftostderr("zmq_test", "ERROR! %s", e.what());
+    }
+  }
 }
-
 
 void EqFctZmqTest::interrupt_usr1(int) {}
 void EqFctZmqTest::init() {}
 void EqFctZmqTest::post_init() {
-  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER",true);
+  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER", true);
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.3");
@@ -122,58 +115,57 @@ void EqFctZmqTest::post_init() {
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP");
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE");
 
-  hThread = std::thread([this]{this->theThread();});
+  hThread = std::thread([this] { this->theThread(); });
 }
 
 void EqFctZmqTest::update() {}
 
 void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
-    // obtain pointer to subscription object
-    auto* subscription = static_cast<Subscription*>(self_);
+  // obtain pointer to subscription object
+  auto* subscription = static_cast<Subscription*>(self_);
 
-    // Make sure the stamp is used from the ZeroMQ header. TODO: Is this really wanted?
-    data->time(info->sec, info->usec);
-    data->mpnum(info->ident);
+  // Make sure the stamp is used from the ZeroMQ header. TODO: Is this really wanted?
+  data->time(info->sec, info->usec);
+  data->mpnum(info->ident);
 
-    std::unique_lock<std::mutex> lock(subscription->listeners_mutex);
+  std::unique_lock<std::mutex> lock(subscription->listeners_mutex);
 
-    // As long as we get a callback from ZMQ, we consider it started
-    if(not subscription->started) {
-      subscription->started = true;
-      subscription->startedCv.notify_all();
+  // As long as we get a callback from ZMQ, we consider it started
+  if(not subscription->started) {
+    subscription->started = true;
+    subscription->startedCv.notify_all();
+  }
+
+  // store thread id of the thread calling this function, if not yet done
+  if(pthread_equal(subscription->zqmThreadId, pthread_t_invalid)) {
+    subscription->zqmThreadId = pthread_self();
+  }
+
+  // check for error
+  if(data->error() != no_connection) {
+    // no error: push the data
+    subscription->hasException = false;
+    for(auto& listener : subscription->listeners) {
+      if(listener->isActiveZMQ) {
+        listener->notifications.push_overwrite(*data);
+      }
     }
-
-    // store thread id of the thread calling this function, if not yet done
-    if(pthread_equal(subscription->zqmThreadId, pthread_t_invalid)) {
-      subscription->zqmThreadId = pthread_self();
+  }
+  else {
+    try {
+      throw std::runtime_error("ZeroMQ connection interrupted: " + data->get_string());
     }
-
-    // check for error
-    if(data->error() != no_connection) {
-      // no error: push the data
-      subscription->hasException = false;
+    catch(...) {
+      subscription->hasException = true;
       for(auto& listener : subscription->listeners) {
         if(listener->isActiveZMQ) {
-          listener->notifications.push_overwrite(*data);
+          listener->notifications.push_overwrite_exception(std::current_exception());
+          lock.unlock();
+          //listener->_backend->informRuntimeError(listener->_path);
+          printtostderr("zmq_callback", "would call backend->informRundimeError()");
+          lock.lock();
         }
       }
     }
-    else {
-      try {
-        throw std::runtime_error("ZeroMQ connection interrupted: " + data->get_string());
-      }
-      catch(...) {
-        subscription->hasException = true;
-        for(auto& listener : subscription->listeners) {
-          if(listener->isActiveZMQ) {
-            listener->notifications.push_overwrite_exception(std::current_exception());
-            lock.unlock();
-            //listener->_backend->informRuntimeError(listener->_path);
-            printtostderr("zmq_callback", "would call backend->informRundimeError()");
-            lock.lock();
-          }
-        }
-      }
-    }
-
+  }
 }

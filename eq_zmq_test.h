@@ -15,13 +15,12 @@
 #define ZmqTest_stat 10
 constexpr size_t NBINS = 222;
 
-struct Listener{
-    explicit Listener(const std::string &path_, bool isMpn_=false) : path(path_), isMpn(isMpn_){}
-    std::string path;
-    bool isMpn;
-    cppext::future_queue<EqData> notifications{3};
-    bool isActiveZMQ{true};
-
+struct Listener {
+  explicit Listener(const std::string& path_, bool isMpn_ = false) : path(path_), isMpn(isMpn_) {}
+  std::string path;
+  bool isMpn;
+  cppext::future_queue<EqData> notifications{3};
+  bool isActiveZMQ{true};
 };
 
 class EqFctZmqTest : public EqFct {
@@ -37,7 +36,6 @@ class EqFctZmqTest : public EqFct {
   static int64_t usecs_last_mpn;
   static int64_t last_mpn;
 
-
   /** static flag if dmsg_start() has been called already, with mutex for thread safety */
   bool dmsgStartCalled{false};
   std::mutex dmsgStartCalled_mutex;
@@ -49,10 +47,9 @@ class EqFctZmqTest : public EqFct {
 
   std::vector<boost::shared_ptr<Listener>> listenerHolder;
 
-
   /// Structure describing a single subscription
   struct Subscription {
-    Subscription(): zqmThreadId(EqFctZmqTest::pthread_t_invalid)   {}
+    Subscription() : zqmThreadId(EqFctZmqTest::pthread_t_invalid) {}
 
     /// list of accessors listening to the ZMQ subscription.
     /// Accessing this vector requires holding zmq_callback_extra_listeners_mutex
@@ -80,10 +77,7 @@ class EqFctZmqTest : public EqFct {
     /// Flag whether an exception has been reported to the listeners since the last activation. Used to prevent
     /// duplicate exceptions in setException(). Will be cleared during activation. Access requires listeners_mutex.
     bool hasException{false};
-
   };
-
-
 
   /// map of subscriptions
   std::map<std::string, Subscription> subscriptionMap;
@@ -91,19 +85,14 @@ class EqFctZmqTest : public EqFct {
   /// mutex for subscriptionMap
   std::mutex subscriptionMap_mutex;
 
-
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);
 
   void theThread();
   std::thread hThread;
 
-
-
   /******************************************************************************************************************/
 
-  void subscribe(const std::string& path, bool isMpn=false);
-
-
+  void subscribe(const std::string& path, bool isMpn = false);
 };
 
 #endif
