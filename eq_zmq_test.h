@@ -12,8 +12,7 @@
 #include <ChimeraTK/cppext/future_queue.hpp>
 #include <boost/shared_ptr.hpp>
 
-#define ZmqTest_stat 10
-constexpr size_t NBINS = 222;
+/******************************************************************************************************************/
 
 struct Listener {
   explicit Listener(const std::string& path_, bool isMpn_ = false) : path(path_), isMpn(isMpn_) {}
@@ -23,15 +22,17 @@ struct Listener {
   bool isActiveZMQ{true};
 };
 
+/******************************************************************************************************************/
+
 class EqFctZmqTest : public EqFct {
  public:
   EqFctZmqTest();
 
-  void interrupt_usr1(int sig_no);
-  void update();
-  void init();
+  void interrupt_usr1(int){};
+  void update(){};
+  void init(){};
   void post_init();
-  int fct_code() { return ZmqTest_stat; }
+  int fct_code() { return 10; }
 
   static int64_t usecs_last_mpn;
   static int64_t last_mpn;
@@ -89,8 +90,6 @@ class EqFctZmqTest : public EqFct {
 
   void theThread();
   std::thread hThread;
-
-  /******************************************************************************************************************/
 
   void subscribe(const std::string& path, bool isMpn = false);
 };

@@ -14,9 +14,13 @@ pthread_t EqFctZmqTest::pthread_t_invalid;
 int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
 
+/******************************************************************************************************************/
+
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
   pthread_t_invalid = pthread_self();
 }
+
+/******************************************************************************************************************/
 
 void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   listenerHolder.push_back(boost::make_shared<Listener>(path, isMpn));
@@ -60,6 +64,8 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   subscriptionMap[path].hasException = false;
 }
 
+/******************************************************************************************************************/
+
 void EqFctZmqTest::theThread() {
   std::vector<cppext::future_queue<EqData>> qothers;
   cppext::future_queue<EqData> qmpn;
@@ -100,8 +106,8 @@ void EqFctZmqTest::theThread() {
   }
 }
 
-void EqFctZmqTest::interrupt_usr1(int) {}
-void EqFctZmqTest::init() {}
+/******************************************************************************************************************/
+
 void EqFctZmqTest::post_init() {
   subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER", true);
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
@@ -118,7 +124,7 @@ void EqFctZmqTest::post_init() {
   hThread = std::thread([this] { this->theThread(); });
 }
 
-void EqFctZmqTest::update() {}
+/******************************************************************************************************************/
 
 void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
   // obtain pointer to subscription object
@@ -169,3 +175,5 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
     }
   }
 }
+
+/******************************************************************************************************************/

@@ -34,7 +34,7 @@ EqFct* eq_create(int eq_code, void*) {
   EqFct* eqn = nullptr;
 
   switch(eq_code) {
-    case ZmqTest_stat:
+    case 10:
       eqn = new EqFctZmqTest();
       break;
   }
