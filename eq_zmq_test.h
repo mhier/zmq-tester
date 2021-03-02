@@ -29,13 +29,15 @@ class EqFctZmqTest : public EqFct {
   EqFctZmqTest();
 
   void interrupt_usr1(int){};
-  void update(){};
+  void update();
   void init(){};
   void post_init();
   int fct_code() { return 10; }
 
   static int64_t usecs_last_mpn;
   static int64_t last_mpn;
+
+  D_spectrum spec_hist{"HIST", 20001, this};
 
   /** static flag if dmsg_start() has been called already, with mutex for thread safety */
   bool dmsgStartCalled{false};
@@ -92,6 +94,12 @@ class EqFctZmqTest : public EqFct {
   std::thread hThread;
 
   void subscribe(const std::string& path, bool isMpn = false);
+
+
+  static std::vector<uint64_t> histogram;
+  static std::mutex mx_hist;
+
+  uint64_t updateCounter{0};
 };
 
 #endif
