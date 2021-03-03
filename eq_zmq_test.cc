@@ -84,15 +84,12 @@ void EqFctZmqTest::post_init() {
 
 /******************************************************************************************************************/
 
-void EqFctZmqTest::zmq_callback(void* name_, EqData* data, dmsg_info_t* info) {
+void EqFctZmqTest::zmq_callback(void* name_, EqData*, dmsg_info_t* info) {
+  auto now = doocs::Timestamp::now();
+
   char* name = static_cast<char*>(name_);
 
-  // Make sure the stamp is used from the ZeroMQ header. TODO: Is this really wanted?
-  data->time(info->sec, info->usec);
-  data->mpnum(info->ident);
-
-  auto now = doocs::Timestamp::now();
-  auto ts = data->get_timestamp();
+  doocs::Timestamp ts(info->sec, info->usec);
   int diff = (now-ts).count()/1e6;
   ++histogram[std::max(std::min(diff,NBINS_HALF),-NBINS_HALF)+NBINS_HALF];
 
