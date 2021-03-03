@@ -52,7 +52,7 @@ void EqFctZmqTest::update() {
     for(size_t i=0; i<NBINS; ++i) {
       spec_hist.fill_spectrum(i, histogram[i]);
     }
-    spec_hist.egu(1, 1., 100000., "counts");
+    spec_hist.egu(1, 0.1, 100000., "counts");
     spec_hist.xegu(0,static_cast<double>(-NBINS_HALF), static_cast<double>(-NBINS_HALF), "ms");
 
 
