@@ -168,51 +168,10 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
     ++histogram[std::max(std::min(diff,10000),-10000)+10000];
   }
 
-  return;
-
-  std::unique_lock<std::mutex> lock(subscription->listeners_mutex);
-
-  // As long as we get a callback from ZMQ, we consider it started
-  if(not subscription->started) {
-    subscription->started = true;
-    subscription->startedCv.notify_all();
+  if(diff > 90) {
+    printftostderr("zmq_callback", "Long delay detected: %d ms for %s", diff, subscription->listeners[0]->path.c_str());
   }
 
-  // store thread id of the thread calling this function, if not yet done
-  if(pthread_equal(subscription->zqmThreadId, pthread_t_invalid)) {
-    subscription->zqmThreadId = pthread_self();
-  }
-
-  // check for error
-  if(data->error() != no_connection) {
-    // no error: push the data
-    subscription->hasException = false;
-    for(auto& listener : subscription->listeners) {
-      if(listener->isActiveZMQ) {
-        bool success = listener->notifications.push_overwrite(*data);
-        if(!success) {
-          printftostderr("zmq_callback", "Queue overrun, MPN: %ld %s",info->ident, subscription->listeners[0]->path.c_str());
-        }
-      }
-    }
-  }
-  else {
-    try {
-      throw std::runtime_error("ZeroMQ connection interrupted: " + data->get_string());
-    }
-    catch(...) {
-      subscription->hasException = true;
-      for(auto& listener : subscription->listeners) {
-        if(listener->isActiveZMQ) {
-          listener->notifications.push_overwrite_exception(std::current_exception());
-          lock.unlock();
-          //listener->_backend->informRuntimeError(listener->_path);
-          printtostderr("zmq_callback", "would call backend->informRundimeError()");
-          lock.lock();
-        }
-      }
-    }
-  }
 }
 
 /******************************************************************************************************************/
