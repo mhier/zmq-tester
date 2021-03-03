@@ -168,6 +168,8 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
     ++histogram[std::max(std::min(diff,10000),-10000)+10000];
   }
 
+  return;
+
   std::unique_lock<std::mutex> lock(subscription->listeners_mutex);
 
   // As long as we get a callback from ZMQ, we consider it started
