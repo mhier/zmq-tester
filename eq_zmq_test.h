@@ -32,10 +32,6 @@ class EqFctZmqTest : public EqFct {
 
   D_spectrum spec_hist{"HIST", NBINS, this};
 
-  /** static flag if dmsg_start() has been called already, with mutex for thread safety */
-  bool dmsgStartCalled{false};
-  std::mutex dmsgStartCalled_mutex;
-
   std::vector<std::string> names;
 
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);

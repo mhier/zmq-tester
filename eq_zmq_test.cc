@@ -17,6 +17,7 @@ std::atomic<uint64_t> EqFctZmqTest::histogram[NBINS];
 /******************************************************************************************************************/
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
+  dmsg_start();
 }
 
 /******************************************************************************************************************/
@@ -35,13 +36,6 @@ void EqFctZmqTest::subscribe(const std::string& path) {
     /// FIXME put error into queue of all accessors!
     throw std::runtime_error(
         std::string("Cannot subscribe to DOOCS property '" + path + "' via ZeroMQ: ") + dst.get_string());
-  }
-
-  // run dmsg_start() once
-  std::unique_lock<std::mutex> lck(dmsgStartCalled_mutex);
-  if(!dmsgStartCalled) {
-    dmsg_start();
-    dmsgStartCalled = true;
   }
 }
 
