@@ -33,7 +33,6 @@ void EqFctZmqTest::subscribe(const std::string& path) {
   dmsg_t tag;
   int err = dmsg_attach(&ea, &dst, (void*)names.back().c_str(), &zmq_callback, &tag);
   if(err) {
-    /// FIXME put error into queue of all accessors!
     throw std::runtime_error(
         std::string("Cannot subscribe to DOOCS property '" + path + "' via ZeroMQ: ") + dst.get_string());
   }
