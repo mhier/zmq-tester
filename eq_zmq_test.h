@@ -85,6 +85,8 @@ class EqFctZmqTest : public EqFct {
   /// map of subscriptions
   std::map<std::string, Subscription> subscriptionMap;
 
+  std::vector<std::string> names;
+
   /// mutex for subscriptionMap
   std::mutex subscriptionMap_mutex;
 

@@ -43,12 +43,14 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
   // from here, this is like ZMQSubscriptionManager::activate(path)
   assert(!subscriptionMap[path].active);
 
+  names.push_back(path);
+
   // subscribe to property
   EqData dst;
   EqAdr ea;
   ea.adr(path);
   dmsg_t tag;
-  int err = dmsg_attach(&ea, &dst, (void*)&(subscriptionMap[path]), &zmq_callback, &tag);
+  int err = dmsg_attach(&ea, &dst, (void*)names.back().c_str(), &zmq_callback, &tag);
   if(err) {
     /// FIXME put error into queue of all accessors!
     throw std::runtime_error(
@@ -152,9 +154,8 @@ void EqFctZmqTest::post_init() {
 
 /******************************************************************************************************************/
 
-void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
-  // obtain pointer to subscription object
-  auto* subscription = static_cast<Subscription*>(self_);
+void EqFctZmqTest::zmq_callback(void* name_, EqData* data, dmsg_info_t* info) {
+  char* name = static_cast<char*>(name_);
 
   // Make sure the stamp is used from the ZeroMQ header. TODO: Is this really wanted?
   data->time(info->sec, info->usec);
@@ -169,7 +170,7 @@ void EqFctZmqTest::zmq_callback(void* self_, EqData* data, dmsg_info_t* info) {
   }
 
   if(diff > 90) {
-    printftostderr("zmq_callback", "Long delay detected: %d ms for %s", diff, subscription->listeners[0]->path.c_str());
+    printftostderr("zmq_callback", "Long delay detected: %d ms for %s", diff, name);
   }
 
 }
