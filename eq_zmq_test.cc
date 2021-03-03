@@ -71,48 +71,6 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
 
 /******************************************************************************************************************/
 
-void EqFctZmqTest::theThread() {
-  std::vector<cppext::future_queue<EqData>> qothers;
-  cppext::future_queue<EqData> qmpn;
-
-  {
-    std::unique_lock<std::mutex> lk(subscriptionMap_mutex);
-
-    for(auto& sub : subscriptionMap) {
-      if(sub.second.listeners.front()->isMpn) {
-        qmpn = sub.second.listeners.front()->notifications;
-      }
-      else {
-        qothers.push_back(sub.second.listeners.front()->notifications);
-      }
-    }
-  }
-
-  while(true) {
-    try {
-      EqData data;
-      qmpn.pop_wait(data);
-
-      int64_t mpn = data.get_long();
-      if(last_mpn != 0) {
-        if(mpn != last_mpn + 1) {
-          printftostderr("zmq_test", "GAP! %ld events missing! %ld -> %ld", mpn - last_mpn - 1, last_mpn, mpn);
-        }
-      }
-      last_mpn = mpn;
-
-      for(auto& q : qothers) {
-        while(q.pop()) continue;
-      }
-    }
-    catch(std::runtime_error& e) {
-      printftostderr("zmq_test", "ERROR! %s", e.what());
-    }
-  }
-}
-
-/******************************************************************************************************************/
-
 void EqFctZmqTest::update() {
     std::unique_lock<std::mutex> lk(mx_hist);
 
@@ -148,8 +106,6 @@ void EqFctZmqTest::post_init() {
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FILLING");
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP");
   subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE");
-
-  hThread = std::thread([this] { this->theThread(); });
 }
 
 /******************************************************************************************************************/

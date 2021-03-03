@@ -92,9 +92,6 @@ class EqFctZmqTest : public EqFct {
 
   static void zmq_callback(void* self_, EqData* data, dmsg_info_t*);
 
-  void theThread();
-  std::thread hThread;
-
   void subscribe(const std::string& path, bool isMpn = false);
 
 
