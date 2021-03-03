@@ -12,13 +12,11 @@ using namespace std;
 
 int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
-std::vector<uint64_t> EqFctZmqTest::histogram;
-std::mutex EqFctZmqTest::mx_hist;
+std::atomic<uint64_t> EqFctZmqTest::histogram[NBINS];
 
 /******************************************************************************************************************/
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
-  histogram.resize(20001);
 }
 
 /******************************************************************************************************************/
@@ -50,21 +48,19 @@ void EqFctZmqTest::subscribe(const std::string& path) {
 /******************************************************************************************************************/
 
 void EqFctZmqTest::update() {
-    std::unique_lock<std::mutex> lk(mx_hist);
-
-    spec_hist.spectrum_parameter(spec_hist.spec_time(), -10000., 1, spec_hist.spec_status());
-    for(size_t i=0; i<20001; ++i) {
+    spec_hist.spectrum_parameter(spec_hist.spec_time(), static_cast<double>(-NBINS_HALF), 1, spec_hist.spec_status());
+    for(size_t i=0; i<NBINS; ++i) {
       spec_hist.fill_spectrum(i, histogram[i]);
     }
     spec_hist.egu(1, 1., 100000., "counts");
-    spec_hist.xegu(0,-10000., 10000., "ms");
+    spec_hist.xegu(0,static_cast<double>(-NBINS_HALF), static_cast<double>(-NBINS_HALF), "ms");
 
 
     // clear histogram after 3 seconds to get rid of startup garbage
     ++updateCounter;
     if(updateCounter == 3) {
         printtostderr("update","Reset histogram after startup");
-        for(size_t i=0; i<20001; ++i) {
+        for(size_t i=0; i<NBINS; ++i) {
             histogram[i] = 0;
         }
     }
@@ -98,10 +94,7 @@ void EqFctZmqTest::zmq_callback(void* name_, EqData* data, dmsg_info_t* info) {
   auto now = doocs::Timestamp::now();
   auto ts = data->get_timestamp();
   int diff = (now-ts).count()/1e6;
-  {
-    std::unique_lock<std::mutex> lk(mx_hist);
-    ++histogram[std::max(std::min(diff,10000),-10000)+10000];
-  }
+  ++histogram[std::max(std::min(diff,NBINS_HALF),-NBINS_HALF)+NBINS_HALF];
 
   if(diff > 90) {
     printftostderr("zmq_callback", "Long delay detected: %d ms for %s", diff, name);

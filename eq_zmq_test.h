@@ -14,15 +14,8 @@
 
 /******************************************************************************************************************/
 
-struct Listener {
-  explicit Listener(const std::string& path_, bool isMpn_ = false) : path(path_), isMpn(isMpn_) {}
-  std::string path;
-  bool isMpn;
-  cppext::future_queue<EqData> notifications{3};
-  bool isActiveZMQ{true};
-};
-
-/******************************************************************************************************************/
+constexpr size_t NBINS{20001};
+constexpr int NBINS_HALF{(NBINS-1)/2};
 
 class EqFctZmqTest : public EqFct {
  public:
@@ -37,7 +30,7 @@ class EqFctZmqTest : public EqFct {
   static int64_t usecs_last_mpn;
   static int64_t last_mpn;
 
-  D_spectrum spec_hist{"HIST", 20001, this};
+  D_spectrum spec_hist{"HIST", NBINS, this};
 
   /** static flag if dmsg_start() has been called already, with mutex for thread safety */
   bool dmsgStartCalled{false};
@@ -49,9 +42,7 @@ class EqFctZmqTest : public EqFct {
 
   void subscribe(const std::string& pathe);
 
-
-  static std::vector<uint64_t> histogram;
-  static std::mutex mx_hist;
+  static std::atomic<uint64_t> histogram[NBINS];
 
   uint64_t updateCounter{0};
 };
