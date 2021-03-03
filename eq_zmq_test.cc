@@ -9,7 +9,6 @@
 
 using namespace std;
 
-pthread_t EqFctZmqTest::pthread_t_invalid;
 
 int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
@@ -19,30 +18,13 @@ std::mutex EqFctZmqTest::mx_hist;
 /******************************************************************************************************************/
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
-  pthread_t_invalid = pthread_self();
   histogram.resize(20001);
 }
 
 /******************************************************************************************************************/
 
-void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
-  listenerHolder.push_back(boost::make_shared<Listener>(path, isMpn));
-
-  std::unique_lock<std::mutex> lock(subscriptionMap_mutex);
-
-  assert(subscriptionMap.find(path) == subscriptionMap.end());
-
-  // gain lock for listener, to exclude concurrent access with the zmq_callback()
-  std::unique_lock<std::mutex> listeners_lock(subscriptionMap[path].listeners_mutex);
-
-  subscriptionMap[path].listeners.push_back(listenerHolder.back().get());
-
-  // subscriptionMap is no longer used below this point
-  lock.unlock();
-
-  // from here, this is like ZMQSubscriptionManager::activate(path)
-  assert(!subscriptionMap[path].active);
-
+void EqFctZmqTest::subscribe(const std::string& path) {
+  // store name for use in callback
   names.push_back(path);
 
   // subscribe to property
@@ -63,10 +45,6 @@ void EqFctZmqTest::subscribe(const std::string& path, bool isMpn) {
     dmsg_start();
     dmsgStartCalled = true;
   }
-
-  // set active flag, reset hasException flag
-  subscriptionMap[path].active = true;
-  subscriptionMap[path].hasException = false;
 }
 
 /******************************************************************************************************************/
@@ -95,7 +73,7 @@ void EqFctZmqTest::update() {
 /******************************************************************************************************************/
 
 void EqFctZmqTest::post_init() {
-  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER", true);
+  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.3");
