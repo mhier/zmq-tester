@@ -17,7 +17,6 @@ std::atomic<uint64_t> EqFctZmqTest::histogram[NBINS];
 /******************************************************************************************************************/
 
 EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
-  dmsg_start();
 }
 
 /******************************************************************************************************************/
@@ -62,6 +61,7 @@ void EqFctZmqTest::update() {
 /******************************************************************************************************************/
 
 void EqFctZmqTest::post_init() {
+  dmsg_start();
   subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
   subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2");
