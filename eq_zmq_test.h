@@ -40,7 +40,7 @@ class EqFctZmqTest : public EqFct {
 
   static std::atomic<uint64_t> histogram[NBINS];
 
-  uint64_t updateCounter{0};
+  static uint64_t updateCounter;
 };
 
 #endif

@@ -12,6 +12,7 @@ using namespace std;
 
 int64_t EqFctZmqTest::usecs_last_mpn{0};
 int64_t EqFctZmqTest::last_mpn{0};
+uint64_t EqFctZmqTest::updateCounter{0};
 std::atomic<uint64_t> EqFctZmqTest::histogram[NBINS];
 
 /******************************************************************************************************************/
@@ -86,7 +87,7 @@ void EqFctZmqTest::zmq_callback(void* name_, EqData*, dmsg_info_t* info) {
   int diff = (now-ts).count()/1e6;
   ++histogram[std::max(std::min(diff,NBINS_HALF),-NBINS_HALF)+NBINS_HALF];
 
-  if(diff > 90) {
+  if(diff > 500 && updateCounter > 3) {
     printftostderr("zmq_callback", "Long delay detected: %d ms for %s", diff, name);
   }
 
