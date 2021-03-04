@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <sys/resource.h>
 #include <boost/make_shared.hpp>
+#include <istream>
+#include <ostream>
 
 using namespace std;
 
@@ -23,6 +25,7 @@ EqFctZmqTest::EqFctZmqTest() : EqFct("LOCATION") {
 /******************************************************************************************************************/
 
 void EqFctZmqTest::subscribe(const std::string& path) {
+  std::cout << "Subscribing: " << path << std::endl;
   // store name for use in callback
   names.push_back(path);
 
@@ -63,17 +66,26 @@ void EqFctZmqTest::update() {
 
 void EqFctZmqTest::post_init() {
   dmsg_start();
-  subscribe("XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER");
-  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1");
-  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2");
-  subscribe("XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.3");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.1");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.2");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.3");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_DELAY");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FILLING");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP");
-  subscribe("XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE");
+  std::ifstream ifs("subscriptions.txt");
+  if(!ifs.good()) {
+    std::ofstream ofs("subscriptions.txt");
+    ofs << "XFEL.RF/TIMER/LLA2SPS/MACRO_PULSE_NUMBER" << std::endl;
+    ofs << "XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.1" << std::endl;
+    ofs << "XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.2" << std::endl;
+    ofs << "XFEL.RF/TIMER/LLA2SPS/BUNCH_POSITION.3" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.1" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.2" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/GLOBAL_SAMPLING.OFFSET.3" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_DELAY" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FILLING" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/PULSE_FLATTOP" << std::endl;
+    ofs << "XFEL.RF/LLRF.CONTROLLER/MAIN.M12.A2SP.L1/REFERENCE_PHASES.LOCAL_AVERAGE" << std::endl;
+    ifs = std::ifstream("subscriptions.txt");
+  }
+  std::string sub;
+  while(ifs >> sub) {
+    subscribe(sub);
+  }
 }
 
 /******************************************************************************************************************/
